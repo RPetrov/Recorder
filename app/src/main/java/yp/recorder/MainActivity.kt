@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.content.ContextCompat
 import android.Manifest
+import android.content.Intent
 import android.media.MediaRecorder
 import android.util.Log
 import android.widget.Button
@@ -43,6 +44,13 @@ class MainActivity : AppCompatActivity() {
                 btnAction.setText("Stop")
             }
         }
+
+        val btnHistory = findViewById<Button>(R.id.btnHistory);
+
+        btnHistory.setOnClickListener{
+            val intent = Intent(this, RecordHistoryActivity::class.java);
+            startActivity(intent);
+        }
     }
 
     private fun startRecording() {
@@ -50,7 +58,9 @@ class MainActivity : AppCompatActivity() {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
             val dateTime = SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis())
-            val newFile = File(filesDir, "$dateTime.3gp")
+            val recordFilePath = File(filesDir.absolutePath + "/records/")
+            recordFilePath.mkdirs()
+            val newFile = File(recordFilePath, "$dateTime.3gp")
             setOutputFile(newFile.absolutePath)
             setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
 
