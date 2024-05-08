@@ -5,37 +5,80 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.content.ContextCompat
 import android.Manifest
+import android.media.MediaRecorder
+import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import java.io.File
+import java.io.IOException
+import java.text.SimpleDateFormat
+
 
 class MainActivity : AppCompatActivity() {
+
+    private var recorder: MediaRecorder? = null
+
     val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
+            startRecording()
         } else {
             Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val btnAction = findViewById<Button>(R.id.btnAction)
         btnAction.setOnClickListener {
-            checkPermission()
+            if (recorder!= null) {
+                stopRecording()
+                btnAction.setText("Start")
+            }else{
+                checkPermissionAndStartRecord()
+                btnAction.setText("Stop")
+            }
         }
     }
 
-    private fun checkPermission() {
+    private fun startRecording() {
+        recorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            val dateTime = SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis())
+            val newFile = File(filesDir, "$dateTime.3gp")
+            setOutputFile(newFile.absolutePath)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+
+            try {
+                prepare()
+            } catch (e: IOException) {
+                Log.e("MainActivity", "prepare() failed")
+            }
+
+            start()
+        }
+    }
+
+    private fun stopRecording() {
+        recorder?.apply {
+            stop()
+            release()
+        }
+        recorder = null
+    }
+
+    private fun checkPermissionAndStartRecord() {
         when {
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.RECORD_AUDIO
             ) == PackageManager.PERMISSION_GRANTED -> {
-                Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
+                startRecording()
             }
 
             ActivityCompat.shouldShowRequestPermissionRationale(
@@ -50,6 +93,13 @@ class MainActivity : AppCompatActivity() {
                     Manifest.permission.RECORD_AUDIO
                 )
             }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (recorder!= null) {
+            onStop()
         }
     }
 }
